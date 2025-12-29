@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1a1a1a;
+  --color-accent: #ff6b4a;
+  --color-glass: rgba(255, 255, 255, 0.1);
+  
+  /* Custom Animations can go here later */
+}
+
+/* Base Styles for that sleek look */
+body {
+  background-color: #f5f5f7; /* Apple-like light grey */
+  color: var(--color-primary);
+  font-family: 'Inter', sans-serif; /* Clean, modern font */
+  -webkit-font-smoothing: antialiased;
+}
