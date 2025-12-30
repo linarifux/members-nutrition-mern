@@ -1,7 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useGetProductsQuery, useCreateProductMutation, useDeleteProductMutation } from '../../redux/slices/productsApiSlice';
 import { Loader2, Plus, Edit, Trash2, AlertTriangle } from 'lucide-react';
-import { toast } from 'react-toastify'; // <--- Import Toast
+import { toast } from 'react-toastify';
+import AdminSidebar from '../../components/admin/AdminSidebar'; // <--- Import Sidebar
 
 const ProductListPage = () => {
   const navigate = useNavigate(); 
@@ -24,19 +25,19 @@ const ProductListPage = () => {
   const deleteHandler = (id) => {
     toast(({ closeToast }) => (
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2 text-red-500 font-bold">
+        <div className="flex items-center gap-2 text-red-400 font-bold">
             <AlertTriangle size={18} />
             <span>Delete this product?</span>
         </div>
         <div className="flex gap-3 justify-end">
             <button 
-                className="text-gray-500 text-sm hover:text-gray-700 font-medium px-2"
+                className="text-gray-400 text-sm hover:text-white font-medium px-2 transition-colors"
                 onClick={closeToast}
             >
                 Cancel
             </button>
             <button 
-                className="bg-red-500 text-white px-3 py-1 rounded-md text-sm font-bold hover:bg-red-600 shadow-sm"
+                className="bg-red-500/20 text-red-200 border border-red-500/50 px-3 py-1 rounded-md text-sm font-bold hover:bg-red-500 hover:text-white transition-all shadow-sm"
                 onClick={() => {
                     performDelete(id);
                     closeToast();
@@ -47,9 +48,9 @@ const ProductListPage = () => {
         </div>
       </div>
     ), {
-        autoClose: false, // Keep open until clicked
-        closeButton: false, // Remove default X
-        position: "top-center" // Show prominently
+        autoClose: false, 
+        closeButton: false, 
+        position: "top-center" 
     });
   };
 
@@ -57,62 +58,87 @@ const ProductListPage = () => {
     navigate('/admin/product/create');
   };
 
-  if (isLoading) return <Loader2 className="animate-spin mx-auto mt-10" />;
-  if (error) return <div className="text-red-500 text-center mt-10">{error?.data?.message}</div>;
-
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-primary">Products</h1>
-        <button 
-          onClick={createProductHandler}
-          className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary/90 transition"
-        >
-          <Plus size={20} /> Create Product
-        </button>
-      </div>
+    <div className="flex flex-col md:flex-row gap-8">
+      {/* Sidebar Navigation */}
+      <AdminSidebar />
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 border-b border-gray-100">
-            <tr>
-              <th className="p-4 font-bold text-sm text-gray-500">ID</th>
-              <th className="p-4 font-bold text-sm text-gray-500">NAME</th>
-              <th className="p-4 font-bold text-sm text-gray-500">RETAIL PRICE</th>
-              <th className="p-4 font-bold text-sm text-gray-500">WHOLESALE</th>
-              <th className="p-4 font-bold text-sm text-gray-500">CATEGORY</th>
-              <th className="p-4 font-bold text-sm text-gray-500">ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((product) => (
-              <tr key={product._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition">
-                <td className="p-4 font-mono text-xs text-gray-400">{product._id.substring(product._id.length - 6)}...</td>
-                <td className="p-4 font-medium text-primary">
-                    {product.name}
-                    {/* Visual indicator for featured/archived */}
-                    {product.isFeatured && <span className="ml-2 text-[10px] bg-yellow-100 text-yellow-700 px-1 rounded">Featured</span>}
-                    {product.isArchived && <span className="ml-2 text-[10px] bg-gray-200 text-gray-500 px-1 rounded">Archived</span>}
-                </td>
-                <td className="p-4">${product.basePriceRetail}</td>
-                <td className="p-4 text-accent font-bold">${product.basePriceWholesale}</td>
-                <td className="p-4 text-sm text-gray-500">{product.category}</td>
-                <td className="p-4 flex gap-2">
-                  <Link to={`/admin/product/${product._id}/edit`} className="p-2 bg-gray-100 rounded hover:bg-primary hover:text-white transition">
-                    <Edit size={16} />
-                  </Link>
-                  <button 
-                    onClick={() => deleteHandler(product._id)}
-                    className="p-2 bg-red-50 text-red-500 rounded hover:bg-red-500 hover:text-white transition"
-                    disabled={loadingDelete}
-                  >
-                    {loadingDelete ? <Loader2 size={16} className="animate-spin"/> : <Trash2 size={16} />}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Main Content Area */}
+      <div className="flex-1">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-white">Products</h1>
+          <button 
+            onClick={createProductHandler}
+            className="bg-accent text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-orange-600 transition-all shadow-lg shadow-accent/20 btn-glow"
+          >
+            <Plus size={20} /> Create Product
+          </button>
+        </div>
+
+        {isLoading ? (
+          <Loader2 className="animate-spin mx-auto mt-10 text-accent" />
+        ) : error ? (
+          <div className="text-red-400 text-center mt-10 glass-panel p-4 rounded-lg border-red-500/20">
+            {error?.data?.message}
+          </div>
+        ) : (
+          <div className="glass-panel rounded-xl border border-white/10 overflow-hidden">
+            <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                <thead className="bg-white/5 border-b border-white/10">
+                    <tr>
+                    <th className="p-4 font-bold text-xs text-gray-400 uppercase tracking-wider">ID</th>
+                    <th className="p-4 font-bold text-xs text-gray-400 uppercase tracking-wider">NAME</th>
+                    <th className="p-4 font-bold text-xs text-gray-400 uppercase tracking-wider">RETAIL</th>
+                    <th className="p-4 font-bold text-xs text-gray-400 uppercase tracking-wider">WHOLESALE</th>
+                    <th className="p-4 font-bold text-xs text-gray-400 uppercase tracking-wider">CATEGORY</th>
+                    <th className="p-4 font-bold text-xs text-gray-400 uppercase tracking-wider">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                    {products.map((product) => (
+                    <tr key={product._id} className="hover:bg-white/5 transition-colors">
+                        <td className="p-4 font-mono text-xs text-gray-500">
+                            {product._id.substring(product._id.length - 6)}...
+                        </td>
+                        <td className="p-4 font-medium text-gray-200">
+                            {product.name}
+                            <div className="flex gap-1 mt-1">
+                                {product.isFeatured && (
+                                    <span className="text-[10px] bg-yellow-500/20 text-yellow-200 border border-yellow-500/20 px-1.5 py-0.5 rounded">Featured</span>
+                                )}
+                                {product.isArchived && (
+                                    <span className="text-[10px] bg-gray-700/50 text-gray-400 border border-gray-600 px-1.5 py-0.5 rounded">Archived</span>
+                                )}
+                            </div>
+                        </td>
+                        <td className="p-4 text-gray-300">${product.basePriceRetail}</td>
+                        <td className="p-4 text-accent font-bold">${product.basePriceWholesale}</td>
+                        <td className="p-4 text-sm text-gray-400">{product.category}</td>
+                        <td className="p-4">
+                            <div className="flex gap-2">
+                                <Link 
+                                    to={`/admin/product/${product._id}/edit`} 
+                                    className="p-2 bg-white/5 text-gray-300 rounded hover:bg-accent hover:text-white transition-all"
+                                >
+                                    <Edit size={16} />
+                                </Link>
+                                <button 
+                                    onClick={() => deleteHandler(product._id)}
+                                    className="p-2 bg-white/5 text-gray-400 rounded hover:bg-red-500/20 hover:text-red-400 transition-all"
+                                    disabled={loadingDelete}
+                                >
+                                    {loadingDelete ? <Loader2 size={16} className="animate-spin"/> : <Trash2 size={16} />}
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    ))}
+                </tbody>
+                </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

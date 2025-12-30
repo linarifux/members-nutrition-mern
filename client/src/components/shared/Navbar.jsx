@@ -5,7 +5,7 @@ import { ShoppingBag, User, Menu, X, Search, LogOut, ChevronDown, Package, Layou
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleCartDrawer } from '../../redux/slices/cartSlice';
 import { logout } from '../../redux/slices/authSlice';
-import CartDrawer from './CartDrawer'; // <--- 1. IMPORT ADDED
+import CartDrawer from './CartDrawer';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -136,7 +136,8 @@ const Navbar = () => {
                                 
                                 <div className="py-1">
                                     {userInfo.role === 'admin' && (
-                                        <Link to="/admin/productlist" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-accent transition-colors">
+                                        // UPDATED LINK: Points to Dashboard Overview
+                                        <Link to="/admin/dashboard" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-accent transition-colors">
                                             <LayoutDashboard size={16} /> Admin Dashboard
                                         </Link>
                                     )}
@@ -204,7 +205,8 @@ const Navbar = () => {
                 {userInfo ? (
                    <>
                       {userInfo.role === 'admin' && (
-                          <Link to="/admin/productlist" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-lg text-gray-300">
+                          // UPDATED LINK: Points to Dashboard Overview
+                          <Link to="/admin/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-lg text-gray-300">
                               <LayoutDashboard size={20} className="text-accent" /> Admin Dashboard
                           </Link>
                       )}
@@ -226,7 +228,6 @@ const Navbar = () => {
         )}
       </AnimatePresence>
 
-      {/* 2. RENDER THE CART DRAWER HERE */}
       <CartDrawer />
     </>
   );

@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from 'react-toastify'; 
+import 'react-toastify/dist/ReactToastify.css'; 
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
@@ -18,9 +18,13 @@ import NotFoundPage from './pages/NotFoundPage';
 
 // Admin Components & Pages
 import AdminRoute from './components/shared/AdminRoute';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage'; // <--- Import Dashboard
 import ProductListPage from './pages/admin/ProductListPage';
+import OrderListPage from './pages/admin/OrderListPage';           // <--- Import Order List
 import ProductEditPage from './pages/admin/ProductEditPage';
 import ProductCreatePage from './pages/admin/ProductCreatePage';
+import UserListPage from './pages/admin/UserListPage';
+import ProfilePage from './pages/ProfilePage';
 
 function App() {
   return (
@@ -29,7 +33,7 @@ function App() {
       <ToastContainer 
         position="bottom-right" 
         autoClose={3000} 
-        theme="dark" // Sets toast style to dark automatically
+        theme="dark" 
         toastClassName="glass-panel border border-white/10 text-gray-200"
       />
       
@@ -46,12 +50,16 @@ function App() {
           <Route path="payment" element={<PaymentPage />} />
           <Route path="placeorder" element={<PlaceOrderPage />} />
           <Route path="order/:id" element={<OrderDetailsPage />} />
+          <Route path="profile" element={<ProfilePage />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminRoute />}>
+            <Route path="dashboard" element={<AdminDashboardPage />} /> {/* <--- New Route */}
             <Route path="productlist" element={<ProductListPage />} />
+            <Route path="orderlist" element={<OrderListPage />} />      {/* <--- New Route */}
             <Route path="product/create" element={<ProductCreatePage />} />
             <Route path="product/:id/edit" element={<ProductEditPage />} />
+            <Route path="userlist" element={<UserListPage />} /> {/* Add this line */}
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />
