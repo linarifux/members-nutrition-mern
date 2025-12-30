@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, User, Menu, X, Search, LogOut, ChevronDown, Package, LayoutDashboard } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleCartDrawer } from '../../redux/slices/cartSlice';
 import { logout } from '../../redux/slices/authSlice';
+import CartDrawer from './CartDrawer'; // <--- 1. IMPORT ADDED
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -14,8 +15,8 @@ const Navbar = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Get Data from Redux
   const { cartItems } = useSelector((state) => state.cart);
   const { userInfo } = useSelector((state) => state.auth);
 
@@ -47,6 +48,8 @@ const Navbar = () => {
     navigate('/login');
   };
 
+  const isActiveLink = (path) => location.pathname === path;
+
   return (
     <>
       <motion.nav
@@ -55,14 +58,14 @@ const Navbar = () => {
         transition={{ duration: 0.5 }}
         className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 border-b ${
           isScrolled
-            ? 'bg-black/60 backdrop-blur-xl border-white/10 shadow-lg py-3'
+            ? 'bg-black/80 backdrop-blur-xl border-white/10 shadow-lg py-3'
             : 'bg-transparent border-transparent py-5'
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
           
           {/* 1. Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
+          <Link to="/" className="flex items-center gap-2 group z-50">
             <div className="w-10 h-10 bg-gradient-to-br from-accent to-orange-600 text-white flex items-center justify-center rounded-xl font-black text-xl shadow-lg shadow-accent/20 group-hover:scale-110 transition-transform duration-300">
               M
             </div>
@@ -73,20 +76,23 @@ const Navbar = () => {
 
           {/* 2. Desktop Links */}
           <div className="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-300">
-            {['Home', 'Shop', 'Wholesale', 'About'].map((item) => (
-                <Link 
-                    key={item} 
-                    to={item === 'Home' ? '/' : `/${item.toLowerCase()}`} 
-                    className="hover:text-white transition-colors relative group"
-                >
-                    {item}
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all duration-300 group-hover:w-full" />
-                </Link>
-            ))}
+            {['Home', 'Shop', 'Wholesale', 'About'].map((item) => {
+                const path = item === 'Home' ? '/' : `/${item.toLowerCase()}`;
+                return (
+                    <Link 
+                        key={item} 
+                        to={path} 
+                        className={`hover:text-white transition-colors relative group ${isActiveLink(path) ? 'text-white' : ''}`}
+                    >
+                        {item}
+                        <span className={`absolute -bottom-1 left-0 h-0.5 bg-accent transition-all duration-300 ${isActiveLink(path) ? 'w-full' : 'w-0 group-hover:w-full'}`} />
+                    </Link>
+                );
+            })}
           </div>
 
-          {/* 3. Icons (Search, Cart, Profile) */}
-          <div className="hidden md:flex items-center space-x-6">
+          {/* 3. Icons */}
+          <div className="hidden md:flex items-center space-x-6 z-50">
             <button className="text-gray-300 hover:text-white transition-colors">
               <Search size={20} />
             </button>
@@ -104,16 +110,15 @@ const Navbar = () => {
               )}
             </button>
 
-            {/* 4. Auth State Logic */}
+            {/* Auth Dropdown */}
             {userInfo ? (
-                // LOGGED IN STATE: Dropdown
                 <div className="relative" ref={profileRef}>
                     <button 
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                         className="flex items-center gap-2 text-sm font-bold text-gray-200 hover:text-accent transition-colors"
                     >
                         <span>{userInfo.name.split(' ')[0]}</span>
-                        <ChevronDown size={16} />
+                        <ChevronDown size={16} className={`transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     <AnimatePresence>
@@ -122,7 +127,7 @@ const Navbar = () => {
                                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                className="absolute right-0 mt-4 w-56 glass-panel rounded-xl border border-white/10 overflow-hidden"
+                                className="absolute right-0 mt-4 w-56 bg-[#1a1a1a] backdrop-blur-xl rounded-xl border border-white/10 shadow-2xl overflow-hidden"
                             >
                                 <div className="px-4 py-3 border-b border-white/10 bg-white/5">
                                     <p className="text-xs text-gray-400">Signed in as</p>
@@ -156,7 +161,6 @@ const Navbar = () => {
                     </AnimatePresence>
                 </div>
             ) : (
-                // LOGGED OUT STATE: Login Button
                 <Link to="/login" className="flex items-center gap-2 bg-white/10 border border-white/10 text-white px-5 py-2 rounded-full text-sm font-bold hover:bg-accent hover:border-accent hover:shadow-lg hover:shadow-accent/20 transition-all active:scale-95">
                     <User size={16} />
                     <span>Login</span>
@@ -164,9 +168,9 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* 5. Mobile Menu Button */}
+          {/* 4. Mobile Menu Toggle */}
           <button 
-            className="md:hidden text-gray-300 hover:text-white"
+            className="md:hidden text-gray-300 hover:text-white z-50"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
@@ -178,48 +182,52 @@ const Navbar = () => {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: '100vh' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="fixed inset-0 top-0 z-40 bg-black/95 backdrop-blur-xl pt-24 px-6 md:hidden overflow-hidden"
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
+            transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+            className="fixed inset-0 top-0 z-40 bg-black/95 backdrop-blur-xl pt-28 px-6 md:hidden overflow-y-auto"
           >
-            <div className="flex flex-col space-y-6 text-2xl font-bold text-gray-300">
+            <div className="flex flex-col space-y-6">
               {['Home', 'Shop', 'Wholesale', 'About'].map((link) => (
                   <Link 
                     key={link}
                     to={link === 'Home' ? '/' : `/${link.toLowerCase()}`} 
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="hover:text-accent transition-colors"
+                    className="text-2xl font-bold text-gray-300 hover:text-accent transition-colors border-b border-white/10 pb-4"
                   >
                     {link}
                   </Link>
               ))}
               
-              <hr className="border-white/10" />
-              
-              {userInfo ? (
-                 <>
-                    {userInfo.role === 'admin' && (
-                        <Link to="/admin/productlist" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-lg">
-                            <LayoutDashboard size={20} /> Dashboard
-                        </Link>
-                    )}
-                    <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-lg">
-                        <User size={20} /> My Profile
-                    </Link>
-                    <button onClick={logoutHandler} className="flex items-center gap-3 text-red-500 text-left text-lg">
-                        <LogOut size={20} /> Logout
-                    </button>
-                 </>
-              ) : (
-                 <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-accent text-lg">
-                    <User size={20} /> Login / Register
-                 </Link>
-              )}
+              <div className="pt-4 space-y-4">
+                {userInfo ? (
+                   <>
+                      {userInfo.role === 'admin' && (
+                          <Link to="/admin/productlist" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-lg text-gray-300">
+                              <LayoutDashboard size={20} className="text-accent" /> Admin Dashboard
+                          </Link>
+                      )}
+                      <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-lg text-gray-300">
+                          <User size={20} className="text-accent" /> My Profile
+                      </Link>
+                      <button onClick={logoutHandler} className="flex items-center gap-3 text-red-500 text-left text-lg w-full">
+                          <LogOut size={20} /> Logout
+                      </button>
+                   </>
+                ) : (
+                   <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-center gap-3 bg-accent text-white py-4 rounded-xl text-lg font-bold w-full">
+                      <User size={20} /> Login / Register
+                   </Link>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 2. RENDER THE CART DRAWER HERE */}
+      <CartDrawer />
     </>
   );
 };

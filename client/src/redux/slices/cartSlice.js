@@ -13,14 +13,16 @@ const cartSlice = createSlice({
     addToCart: (state, action) => {
       const item = action.payload;
       
-      // We use 'sku' (or a combination of ID + variant) to identify unique items
+      // Use 'sku' to identify unique items (Variant SKU or Product ID fallback)
       const existItem = state.cartItems.find((x) => x.sku === item.sku);
 
       if (existItem) {
+        // If item exists, replace it (updates qty and options)
         state.cartItems = state.cartItems.map((x) =>
           x.sku === existItem.sku ? item : x
         );
       } else {
+        // If not, add new item
         state.cartItems = [...state.cartItems, item];
       }
 
@@ -31,7 +33,7 @@ const cartSlice = createSlice({
     },
     
     removeFromCart: (state, action) => {
-      // Filter out by SKU
+      // Filter out by SKU (The payload must be the SKU string)
       state.cartItems = state.cartItems.filter((x) => x.sku !== action.payload);
       return updateCart(state);
     },
@@ -41,16 +43,16 @@ const cartSlice = createSlice({
         state.isCartOpen = action.payload !== undefined ? action.payload : !state.isCartOpen;
     },
     
-    clearCart: (state) => {
+    clearCartItems: (state) => {
         state.cartItems = [];
         return updateCart(state);
     },
+
     saveShippingAddress: (state, action) => {
       state.shippingAddress = action.payload;
-      return updateCart(state); // Saves to localStorage automatically via our utility
+      return updateCart(state);
     },
     
-    // Add this too (we will need it next)
     savePaymentMethod: (state, action) => {
       state.paymentMethod = action.payload;
       return updateCart(state);
@@ -58,6 +60,13 @@ const cartSlice = createSlice({
   },
 });
 
-export const { addToCart, removeFromCart, toggleCartDrawer, clearCart, savePaymentMethod, saveShippingAddress } = cartSlice.actions;
+export const { 
+    addToCart, 
+    removeFromCart, 
+    toggleCartDrawer, 
+    clearCartItems, 
+    savePaymentMethod, 
+    saveShippingAddress 
+} = cartSlice.actions;
 
 export default cartSlice.reducer;
