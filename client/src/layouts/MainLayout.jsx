@@ -1,31 +1,28 @@
 import { Outlet } from 'react-router-dom';
+import Footer from '../components/shared/Footer';
 import Navbar from '../components/shared/Navbar';
-import CartDrawer from '../components/shared/CartDrawer'; // <--- Import
 
 const MainLayout = () => {
   return (
-    <div className="min-h-screen bg-gray-50 text-primary font-sans relative">
+    // Updated Background: Deep slate/black gradient
+    <div className="flex flex-col min-h-screen bg-gray-950 text-gray-100 font-sans selection:bg-accent selection:text-white"> 
       
-      {/* Dynamic Background Blurs */}
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-accent/10 rounded-full blur-[100px] opacity-60"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-400/10 rounded-full blur-[100px] opacity-40"></div>
+      {/* Background Ambience (Optional: Adds subtle glowing orbs behind content) */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent/5 rounded-full blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[120px]" />
       </div>
 
-      <Navbar />
-      <CartDrawer /> {/* <--- Add here (can be anywhere, it's fixed position) */}
+      {/* Content z-10 ensures it sits above the background blobs */}
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <Navbar />
+        
+        <main className="grow container mx-auto px-4 py-8">
+          <Outlet />
+        </main>
 
-      {/* Main Content Area */}
-      {/* Added pt-24 to prevent content from hiding behind the fixed navbar */}
-      <main className="pt-24 min-h-[80vh]">
-        <Outlet />
-      </main>
-
-      {/* Simple Footer Placeholder */}
-      <footer className="py-8 text-center text-gray-400 text-sm border-t border-gray-200 mt-20">
-        &copy; {new Date().getFullYear()} Members Nutrition. All rights reserved.
-      </footer>
-      
+        <Footer />
+      </div>
     </div>
   );
 };

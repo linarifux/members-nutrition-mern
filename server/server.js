@@ -6,8 +6,13 @@ import morgan from 'morgan';
 import connectDB from './config/db.js'; // Note the .js extension
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
+
 import productRoutes from './routes/productRoutes.js'; // <--- ADD THIS
 import userRoutes from './routes/userRoutes.js';
+import orderRoutes from './routes/orderRoutes.js'; // <--- Import
+import uploadRoutes from './routes/uploadRoutes.js'
+
+
 
 // Load env vars
 dotenv.config();
@@ -33,6 +38,15 @@ app.get('/', (req, res) => {
 
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/orders', orderRoutes); // <--- Add Route
+
+// upload image
+app.use('/api/upload', uploadRoutes)
+
+// PayPal Config Route
+app.get('/api/config/paypal', (req, res) =>
+  res.send({ clientId: process.env.PAYPAL_CLIENT_ID })
+);
 
 // Error Handling
 app.use(notFound);

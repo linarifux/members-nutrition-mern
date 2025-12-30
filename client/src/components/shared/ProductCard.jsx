@@ -1,44 +1,89 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Eye, Star } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import Rating from './Rating';
 
 const ProductCard = ({ product }) => {
+  const { userInfo } = useSelector((state) => state.auth);
+  const isWholesaleUser = userInfo?.role === 'wholesale';
+
+  // Helper for image array
+  const mainImage = product.images && product.images.length > 0 
+      ? product.images[0] 
+      : (product.image || 'https://placehold.co/600x400');
+
   return (
-    <div className="group relative bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+    // GLASS PANEL CARD
+    <div className="group relative glass-panel rounded-2xl overflow-hidden flex flex-col h-full hover:border-accent/30 hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500">
       
-      {/* Image Container */}
-      <Link to={`/product/${product._id}`} className="block relative h-64 overflow-hidden bg-gray-100">
+      {/* Image Area - Darker background for contrast */}
+      <Link to={`/product/${product._id}`} className="block relative h-72 overflow-hidden bg-black/40 p-6 flex items-center justify-center">
         <img 
-          src={product.image || 'https://placehold.co/600x400'} 
+          src={mainImage} 
           alt={product.name} 
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          className="w-full h-full object-contain drop-shadow-2xl group-hover:scale-110 group-hover:rotate-2 transition-all duration-700 ease-out"
         />
-        {/* Wholesale Badge (Logic to show only if needed can be added later) */}
-        {product.isWholesaleOnly && (
-            <span className="absolute top-2 right-2 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">
-                Wholesale
-            </span>
-        )}
+        
+        {/* Floating Badges */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+            {product.isFeatured && (
+                <span className="bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 text-[10px] font-bold px-2 py-1 rounded backdrop-blur-md uppercase tracking-wider flex items-center gap-1">
+                    <Star size={10} fill="currentColor" /> Featured
+                </span>
+            )}
+            {isWholesaleUser && (
+                <span className="bg-accent/20 text-accent border border-accent/30 text-[10px] font-bold px-2 py-1 rounded backdrop-blur-md uppercase tracking-wider">
+                    Wholesale
+                </span>
+            )}
+        </div>
       </Link>
 
-      {/* Content */}
-      <div className="p-4">
-        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{product.category}</p>
-        <Link to={`/product/${product._id}`}>
-          <h3 className="text-lg font-bold text-primary mb-2 line-clamp-1 group-hover:text-accent transition-colors">
-            {product.name}
-          </h3>
-        </Link>
-        
-        {/* Price Row */}
-        <div className="flex items-center justify-between mt-3">
-            <div>
-                <span className="text-gray-400 text-sm">From</span>
-                <p className="text-lg font-bold text-primary">${product.basePriceRetail}</p>
+      {/* Content Area */}
+      <div className="p-5 flex flex-col flex-1 relative">
+        {/* Glow effect behind text */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col h-full">
+            <div className="flex justify-between items-start mb-2">
+                <p className="text-xs text-gray-400 font-mono uppercase tracking-widest">{product.category}</p>
+                <div className="flex gap-0.5">
+                    {/* Simplified Rating Dots for style */}
+                    {[...Array(5)].map((_, i) => (
+                        <div key={i} className={`w-1 h-1 rounded-full ${i < Math.round(product.rating) ? 'bg-accent' : 'bg-gray-700'}`} />
+                    ))}
+                </div>
             </div>
             
-            <button className="bg-gray-100 hover:bg-primary hover:text-white p-2 rounded-full transition-colors">
-                <ShoppingCart size={20} />
-            </button>
+            <Link to={`/product/${product._id}`} className="block mb-4">
+              <h3 className="text-lg font-bold text-white leading-snug group-hover:text-accent transition-colors">
+                {product.name}
+              </h3>
+            </Link>
+            
+            {/* Price & Action */}
+            <div className="mt-auto flex items-center justify-between">
+                <div>
+                    {isWholesaleUser ? (
+                        <div className="flex flex-col">
+                            <span className="text-xs text-gray-500 line-through">${product.basePriceRetail}</span>
+                            <span className="text-xl font-bold text-accent drop-shadow-lg">${product.basePriceWholesale}</span>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col">
+                            <span className="text-xs text-gray-500">Retail</span>
+                            <span className="text-xl font-bold text-white">${product.basePriceRetail}</span>
+                        </div>
+                    )}
+                </div>
+                
+                <Link 
+                    to={`/product/${product._id}`}
+                    className="w-10 h-10 rounded-full bg-white/5 hover:bg-accent hover:text-white border border-white/10 flex items-center justify-center transition-all duration-300 group/btn"
+                >
+                    <Eye size={18} className="group-hover/btn:scale-110" />
+                </Link>
+            </div>
         </div>
       </div>
     </div>

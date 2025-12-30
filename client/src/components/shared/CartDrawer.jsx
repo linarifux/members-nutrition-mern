@@ -6,9 +6,17 @@ import { Link } from 'react-router-dom';
 
 const CartDrawer = () => {
   const dispatch = useDispatch();
+  
+  // Get Cart Data
   const { cartItems, isCartOpen, itemsPrice } = useSelector((state) => state.cart);
+  
+  // Get Auth Data (To decide where to send the user)
+  const { userInfo } = useSelector((state) => state.auth);
 
   const closeCart = () => dispatch(toggleCartDrawer(false));
+
+  // Logic: If logged in -> Shipping. If not -> Login (then redirect to shipping)
+  const checkoutDestination = userInfo ? '/shipping' : '/login?redirect=/shipping';
 
   return (
     <AnimatePresence>
@@ -69,8 +77,9 @@ const CartDrawer = () => {
                         </button>
                       </div>
                       
+                      {/* Safety Check: added || {} to prevent crash if selectedOptions is undefined */}
                       <p className="text-xs text-gray-500 mb-2">
-                         {Object.values(item.selectedOptions).join(' / ')}
+                         {Object.values(item.selectedOptions || {}).join(' / ')}
                       </p>
 
                       <div className="flex justify-between items-center mt-2">
@@ -93,7 +102,7 @@ const CartDrawer = () => {
                 <p className="text-xs text-gray-500 mb-4 text-center">Shipping & taxes calculated at checkout.</p>
                 
                 <Link 
-                  to="/login?redirect=/shipping" 
+                  to={checkoutDestination}
                   onClick={closeCart}
                   className="w-full bg-primary text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20"
                 >

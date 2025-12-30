@@ -1,43 +1,55 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useGetProductDetailsQuery } from '../redux/slices/productsApiSlice';
-import { addToCart } from '../redux/slices/cartSlice'; // <--- Import Action
+import { addToCart } from '../redux/slices/cartSlice'; 
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, Minus, Plus, ShoppingBag, Loader2, Check, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Rating from '../components/shared/Rating';
+import { toast } from 'react-toastify';
 
 const ProductDetailsPage = () => {
   const { id: productId } = useParams();
-  const dispatch = useDispatch(); // <--- Initialize Dispatch
+  const dispatch = useDispatch();
 
   const { data: product, isLoading, error } = useGetProductDetailsQuery(productId);
   
-  // Local State for User Selections
+  // Local State
   const [selectedOptions, setSelectedOptions] = useState({}); 
   const [qty, setQty] = useState(1);
   const [activeVariant, setActiveVariant] = useState(null);
+  const [activeImage, setActiveImage] = useState(''); // State for Gallery
 
-  // Auth State (Optional: Use to determine which price to push to cart)
-  // const { userInfo } = useSelector((state) => state.auth); 
+  const { userInfo } = useSelector((state) => state.auth); 
+  const isWholesaleUser = userInfo?.role === 'wholesale';
 
-  // EFFECT: Set default options when product loads
+  // EFFECT: Set default options & image when product loads
   useEffect(() => {
-    if (product && product.options) {
-      const defaults = {};
-      product.options.forEach(opt => {
-        defaults[opt.name] = opt.values[0];
-      });
-      setSelectedOptions(defaults);
+    if (product) {
+      // 1. Set Default Image
+      if (product.images && product.images.length > 0) {
+        setActiveImage(product.images[0]);
+      } else {
+        setActiveImage(product.image || ''); // Fallback for legacy data
+      }
+
+      // 2. Set Default Options
+      if (product.options && product.options.length > 0) {
+        const defaults = {};
+        product.options.forEach(opt => {
+          defaults[opt.name] = opt.values[0];
+        });
+        setSelectedOptions(defaults);
+      }
     }
   }, [product]);
 
-  // EFFECT: Find the specific variant whenever options change
+  // EFFECT: Find specific variant when options change
   useEffect(() => {
     if (product && product.variants && Object.keys(selectedOptions).length > 0) {
       const found = product.variants.find(variant => {
         return Object.entries(selectedOptions).every(
-          ([key, value]) => variant.attributes[key] === value
+          ([key, value]) => variant.attributes && variant.attributes[key] === value
         );
       });
       setActiveVariant(found);
@@ -49,33 +61,43 @@ const ProductDetailsPage = () => {
   };
 
   const addToCartHandler = () => {
-    // 1. Determine Price (Retail vs Wholesale logic can go here later)
-    const finalPrice = activeVariant ? activeVariant.priceRetail : product.basePriceRetail;
+    // Determine Price based on User Role or Variant
+    // If Wholesale User -> Use Wholesale Price. Else Retail.
+    let finalPrice = isWholesaleUser ? product.basePriceWholesale : product.basePriceRetail;
 
-    // 2. Determine Unique ID (SKU)
-    // If no variant exists, fallback to product._id
+    // If Variant exists, override with Variant Price
+    if (activeVariant) {
+        finalPrice = isWholesaleUser ? activeVariant.priceWholesale : activeVariant.priceRetail;
+    }
+
     const finalSku = activeVariant ? activeVariant.sku : product._id; 
+    const finalStock = activeVariant ? activeVariant.countInStock : product.countInStock;
 
-    // 3. Dispatch to Redux Store
     dispatch(addToCart({
         product: product._id,
         name: product.name,
-        image: product.image,
+        image: activeImage, // Use currently visible image
         price: finalPrice,
-        countInStock: activeVariant ? activeVariant.countInStock : product.countInStock,
+        countInStock: finalStock,
         qty,
         sku: finalSku,
-        selectedOptions // Pass options to display in cart (e.g. "Size: Small")
+        selectedOptions
     }));
   };
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-accent" size={48}/></div>;
   if (error) return <div className="text-center py-20 text-red-500">Error: {error?.data?.message || error.error}</div>;
 
-  // Fallback prices for display
+  // Prices for Display
   const currentRetailPrice = activeVariant ? activeVariant.priceRetail : product.basePriceRetail;
   const currentWholesalePrice = activeVariant ? activeVariant.priceWholesale : product.basePriceWholesale;
-  const isOutOfStock = activeVariant ? activeVariant.countInStock === 0 : product.countInStock === 0;
+  const currentStock = activeVariant ? activeVariant.countInStock : product.countInStock;
+  const isOutOfStock = currentStock === 0;
+
+  // Normalize Images Array for Gallery
+  const galleryImages = product.images && product.images.length > 0 
+      ? product.images 
+      : [product.image]; // Fallback to single image array
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
@@ -92,26 +114,35 @@ const ProductDetailsPage = () => {
           className="space-y-4"
         >
           {/* Main Image */}
-          <div className="aspect-square rounded-3xl overflow-hidden bg-gray-100 border border-gray-200 shadow-sm relative">
-             <img 
-               src={product.image} 
-               alt={product.name} 
-               className="w-full h-full object-cover"
-             />
-             {activeVariant?.countInStock < 10 && activeVariant?.countInStock > 0 && (
-                 <span className="absolute top-4 left-4 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold border border-orange-200">
-                    Low Stock: Only {activeVariant.countInStock} left!
-                 </span>
-             )}
+          <div className="aspect-square rounded-3xl overflow-hidden bg-gray-100 border border-gray-200 shadow-sm relative group">
+              <img 
+                src={activeImage} 
+                alt={product.name} 
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              {currentStock < 10 && currentStock > 0 && (
+                  <span className="absolute top-4 left-4 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold border border-orange-200 shadow-sm">
+                     Low Stock: Only {currentStock} left!
+                  </span>
+              )}
           </div>
-          {/* Thumbnail Gallery (Placeholder loop) */}
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            {[product.image, ...product.images].map((img, index) => (
-                <button key={index} className="w-20 h-20 rounded-xl overflow-hidden border-2 border-transparent hover:border-accent transition-all flex-shrink-0">
-                    <img src={img} alt="" className="w-full h-full object-cover" />
-                </button>
-            ))}
-          </div>
+          
+          {/* Thumbnail Gallery */}
+          {galleryImages.length > 1 && (
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                {galleryImages.map((img, index) => (
+                    <button 
+                        key={index} 
+                        onClick={() => setActiveImage(img)}
+                        className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${
+                            activeImage === img ? 'border-accent shadow-md scale-105' : 'border-transparent hover:border-gray-300'
+                        }`}
+                    >
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                    </button>
+                ))}
+              </div>
+          )}
         </motion.div>
 
 
@@ -121,7 +152,11 @@ const ProductDetailsPage = () => {
            animate={{ opacity: 1, x: 0 }}
            transition={{ delay: 0.2 }}
         >
-          <div className="mb-2 text-sm text-accent font-bold uppercase tracking-wider">{product.brand}</div>
+          <div className="flex justify-between items-start mb-2">
+             <div className="text-sm text-accent font-bold uppercase tracking-wider">{product.brand}</div>
+             {product.subCategory && <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{product.subCategory}</div>}
+          </div>
+          
           <h1 className="text-3xl md:text-4xl font-bold text-primary mb-4">{product.name}</h1>
           
           <div className="flex items-center gap-4 mb-6">
@@ -135,23 +170,29 @@ const ProductDetailsPage = () => {
           {/* PRICING BLOCK */}
           <div className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm mb-8">
             <div className="flex items-end gap-3 mb-2">
-                <span className="text-4xl font-bold text-primary">${currentRetailPrice}</span>
-                <span className="text-gray-400 mb-1 text-sm font-medium">Retail Price</span>
+                <span className="text-4xl font-bold text-primary">
+                    ${isWholesaleUser ? currentWholesalePrice : currentRetailPrice}
+                </span>
+                <span className="text-gray-400 mb-1 text-sm font-medium">
+                    {isWholesaleUser ? 'Wholesale Price' : 'Retail Price'}
+                </span>
             </div>
             
-            {/* Wholesale Price Highlight */}
-            <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg text-blue-800">
-                <div className="bg-blue-600 text-white p-1 rounded">
-                    <Check size={14} />
+            {/* Wholesale Upsell (Only show if NOT wholesale user) */}
+            {!isWholesaleUser && (
+                <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg text-blue-800 mt-3">
+                    <div className="bg-blue-600 text-white p-1 rounded">
+                        <Check size={14} />
+                    </div>
+                    <div>
+                        <span className="font-bold text-lg">${currentWholesalePrice}</span>
+                        <span className="text-xs text-blue-600 ml-1 uppercase font-bold">Wholesale Available</span>
+                    </div>
+                    <div className="ml-auto text-xs text-blue-500 font-medium">
+                        Save ${(currentRetailPrice - currentWholesalePrice).toFixed(2)}
+                    </div>
                 </div>
-                <div>
-                    <span className="font-bold text-lg">${currentWholesalePrice}</span>
-                    <span className="text-xs text-blue-600 ml-1 uppercase font-bold">Wholesale</span>
-                </div>
-                <div className="ml-auto text-xs text-blue-500">
-                    (Save ${(currentRetailPrice - currentWholesalePrice).toFixed(2)})
-                </div>
-            </div>
+            )}
           </div>
 
           {/* DESCRIPTION */}
@@ -161,7 +202,7 @@ const ProductDetailsPage = () => {
 
           {/* VARIANT SELECTORS */}
           <div className="space-y-6 mb-8">
-            {product.options.map((option) => (
+            {product.options && product.options.map((option) => (
                 <div key={option.name}>
                     <label className="block text-sm font-bold text-gray-700 mb-3">
                         Select {option.name}: <span className="text-gray-400 font-normal">{selectedOptions[option.name]}</span>
@@ -203,7 +244,7 @@ const ProductDetailsPage = () => {
                 </button>
                 <span className="w-12 text-center font-bold text-lg">{qty}</span>
                 <button 
-                    onClick={() => setQty(Math.min(activeVariant?.countInStock || 10, qty + 1))}
+                    onClick={() => setQty(Math.min(currentStock || 10, qty + 1))}
                     className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-primary transition-colors disabled:opacity-50"
                     disabled={isOutOfStock}
                 >
@@ -230,10 +271,10 @@ const ProductDetailsPage = () => {
           
           {/* Wholesale Info Note */}
           <div className="mt-6 flex gap-3 text-sm text-gray-500 bg-gray-50 p-4 rounded-xl">
-             <AlertCircle size={20} className="text-gray-400 flex-shrink-0" />
+             <AlertCircle size={20} className="text-gray-400 shrink-0" />
              <p>
-                 Bulk discount applies automatically for orders over {product.minWholesaleQty || 10} items. 
-                 <Link to="/wholesale" className="text-accent hover:underline ml-1">Login as Wholesaler</Link> for invoice payments.
+                 Orders over $500 qualify for free shipping. 
+                 {!isWholesaleUser && <Link to="/login" className="text-accent hover:underline ml-1 font-bold">Log in</Link>} to check wholesale status.
              </p>
           </div>
 
