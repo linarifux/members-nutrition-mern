@@ -25,6 +25,7 @@ import ProductEditPage from './pages/admin/ProductEditPage';
 import ProductCreatePage from './pages/admin/ProductCreatePage';
 import UserListPage from './pages/admin/UserListPage';
 import ProfilePage from './pages/ProfilePage';
+import ShopPage from './pages/ShopPage';
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
           <Route path="product/:id" element={<ProductDetailsPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
+          <Route path="shop" element={<ShopPage />} />
           
           {/* Protected Routes */}
           <Route path="shipping" element={<ShippingPage />} />

@@ -11,7 +11,13 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  // Search State
+  const [showSearch, setShowSearch] = useState(false);
+  const [keyword, setKeyword] = useState('');
+  
   const profileRef = useRef(null);
+  const searchRef = useRef(null);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -31,21 +37,36 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns/search when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
       }
+      // Close search if clicking outside and input is empty
+      if (searchRef.current && !searchRef.current.contains(event.target) && keyword === '') {
+        setShowSearch(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [keyword]);
 
   const logoutHandler = () => {
     dispatch(logout());
     setIsProfileOpen(false);
     navigate('/login');
+  };
+
+  const searchHandler = (e) => {
+    e.preventDefault();
+    if (keyword.trim()) {
+      navigate(`/shop?search=${keyword}`);
+      setShowSearch(false);
+      setKeyword('');
+    } else {
+      navigate('/shop');
+    }
   };
 
   const isActiveLink = (path) => location.pathname === path;
@@ -93,9 +114,43 @@ const Navbar = () => {
 
           {/* 3. Icons */}
           <div className="hidden md:flex items-center space-x-6 z-50">
-            <button className="text-gray-300 hover:text-white transition-colors">
-              <Search size={20} />
-            </button>
+            
+            {/* Search Bar */}
+            <div className="relative flex items-center" ref={searchRef}>
+                <AnimatePresence>
+                    {showSearch && (
+                        <motion.form 
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: 220, opacity: 1 }}
+                            exit={{ width: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            onSubmit={searchHandler}
+                            className="absolute right-8 overflow-hidden mr-2"
+                        >
+                            <input 
+                                type="text" 
+                                placeholder="Search products..." 
+                                className="w-full bg-white/10 border border-white/20 text-white px-4 py-2 rounded-full focus:outline-none focus:border-accent focus:bg-black/40 backdrop-blur-md text-sm placeholder-gray-400"
+                                value={keyword}
+                                onChange={(e) => setKeyword(e.target.value)}
+                                autoFocus
+                            />
+                        </motion.form>
+                    )}
+                </AnimatePresence>
+                <button 
+                    onClick={() => {
+                        if(showSearch && keyword.trim()) {
+                            searchHandler({ preventDefault: () => {} });
+                        } else {
+                            setShowSearch(!showSearch);
+                        }
+                    }} 
+                    className={`text-gray-300 hover:text-white transition-colors z-10 ${showSearch ? 'text-accent' : ''}`}
+                >
+                    <Search size={20} />
+                </button>
+            </div>
             
             {/* Cart Button */}
             <button 
@@ -136,7 +191,6 @@ const Navbar = () => {
                                 
                                 <div className="py-1">
                                     {userInfo.role === 'admin' && (
-                                        // UPDATED LINK: Points to Dashboard Overview
                                         <Link to="/admin/dashboard" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-accent transition-colors">
                                             <LayoutDashboard size={16} /> Admin Dashboard
                                         </Link>
@@ -201,11 +255,27 @@ const Navbar = () => {
                   </Link>
               ))}
               
+              {/* Mobile Search */}
+              <form onSubmit={(e) => {
+                  searchHandler(e);
+                  setIsMobileMenuOpen(false);
+              }} className="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Search products..." 
+                    className="w-full bg-white/10 border border-white/20 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-accent"
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                  />
+                  <button type="submit" className="absolute right-4 top-3.5 text-gray-400">
+                      <Search size={20} />
+                  </button>
+              </form>
+
               <div className="pt-4 space-y-4">
                 {userInfo ? (
                    <>
                       {userInfo.role === 'admin' && (
-                          // UPDATED LINK: Points to Dashboard Overview
                           <Link to="/admin/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-lg text-gray-300">
                               <LayoutDashboard size={20} className="text-accent" /> Admin Dashboard
                           </Link>
