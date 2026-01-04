@@ -26,10 +26,12 @@ import ProductCreatePage from './pages/admin/ProductCreatePage';
 import UserListPage from './pages/admin/UserListPage';
 import ProfilePage from './pages/ProfilePage';
 import ShopPage from './pages/ShopPage';
+import ScrollToTop from './components/shared/ScrollToTop';
 
 function App() {
   return (
     <BrowserRouter>
+    <ScrollToTop /> {/* <--- Place it here */}
       {/* ToastContainer global configuration for Dark Mode */}
       <ToastContainer 
         position="bottom-right" 

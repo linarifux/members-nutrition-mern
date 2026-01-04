@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Added useEffect
 import { Link, useNavigate } from 'react-router-dom';
 import { useCreateProductMutation, useUploadProductImageMutation } from '../../redux/slices/productsApiSlice';
 import { Loader2, ArrowLeft, Save, Plus, Trash2, X } from 'lucide-react';
 import { toast } from 'react-toastify';
-import AdminSidebar from '../../components/admin/AdminSidebar'; // Import Sidebar
+import AdminSidebar from '../../components/admin/AdminSidebar';
 
 const ProductCreatePage = () => {
   const navigate = useNavigate();
@@ -27,7 +27,33 @@ const ProductCreatePage = () => {
   const [isArchived, setIsArchived] = useState(false);
 
   const [options, setOptions] = useState([]);
-  const [variants, setVariants] = useState([]);
+  
+  // Initialize with one empty variant so the first row is visible
+  const [variants, setVariants] = useState([{ 
+      sku: '', 
+      priceRetail: 0, 
+      priceWholesale: 0, 
+      countInStock: 0, 
+      attributes: {} 
+  }]);
+
+  // Update new variant prices when base prices change (optional convenience)
+  useEffect(() => {
+     setVariants(prev => {
+         // Only update the last (empty) variant to reflect current base prices
+         const newVars = [...prev];
+         const lastIdx = newVars.length - 1;
+         if (lastIdx >= 0 && !newVars[lastIdx].sku) {
+             newVars[lastIdx] = {
+                 ...newVars[lastIdx],
+                 priceRetail: priceRetail || 0,
+                 priceWholesale: priceWholesale || 0
+             };
+         }
+         return newVars;
+     });
+  }, [priceRetail, priceWholesale]);
+
 
   // --- Image Handlers ---
   const uploadFileHandler = async (e) => {
@@ -50,6 +76,9 @@ const ProductCreatePage = () => {
   const submitHandler = async (e) => {
     e.preventDefault();
     try {
+      // Filter out empty variants before submitting
+      const validVariants = variants.filter(v => v.sku && v.sku.trim() !== '');
+
       await createProduct({
         name,
         basePriceRetail: priceRetail,
@@ -63,7 +92,7 @@ const ProductCreatePage = () => {
         isFeatured,
         isArchived,
         options,
-        variants
+        variants: validVariants // Send only valid variants
       }).unwrap();
       
       toast.success('Product created successfully');
@@ -87,21 +116,42 @@ const ProductCreatePage = () => {
     setOptions(newOptions);
   };
 
-  const handleAddVariant = () => {
-    setVariants([...variants, { 
-      sku: '', 
-      priceRetail: priceRetail || 0, 
-      priceWholesale: priceWholesale || 0, 
-      countInStock: 0, 
-      attributes: {} 
-    }]);
+  // Logic to add a new empty variant row
+  const addNewEmptyVariant = () => {
+      setVariants(prev => [...prev, { 
+          sku: '', 
+          priceRetail: priceRetail || 0, 
+          priceWholesale: priceWholesale || 0, 
+          countInStock: 0, 
+          attributes: {} 
+      }]);
   };
-  const handleRemoveVariant = (index) => setVariants(variants.filter((_, i) => i !== index));
+
+  const handleRemoveVariant = (index) => {
+      // If removing the only variant, reset it to empty instead of removing
+      if (variants.length === 1) {
+          setVariants([{ 
+              sku: '', 
+              priceRetail: priceRetail || 0, 
+              priceWholesale: priceWholesale || 0, 
+              countInStock: 0, 
+              attributes: {} 
+          }]);
+      } else {
+          setVariants(variants.filter((_, i) => i !== index));
+      }
+  };
   
   const handleVariantChange = (index, field, value) => {
     const newVariants = [...variants];
     newVariants[index][field] = value;
     setVariants(newVariants);
+
+    // AUTO-ADD LOGIC:
+    // If we are editing the last variant in the list AND the SKU field has content, add a new row
+    if (index === variants.length - 1 && field === 'sku' && value.trim() !== '') {
+        addNewEmptyVariant();
+    }
   };
   
   const handleVariantAttributeChange = (index, key, value) => {
@@ -188,12 +238,13 @@ const ProductCreatePage = () => {
 
                     <div className="flex justify-between items-center border-b border-white/10 pb-2 pt-4">
                         <h2 className="font-bold text-lg text-white">Variants (SKUs)</h2>
-                        <button type="button" onClick={handleAddVariant} className="text-sm text-accent font-bold flex items-center gap-1 hover:text-orange-400 transition-colors"><Plus size={16}/> Add SKU</button>
+                        {/* Removed manual 'Add SKU' button as it's now automatic, or keep it as backup */}
+                        <button type="button" onClick={addNewEmptyVariant} className="text-sm text-gray-500 hover:text-accent font-bold flex items-center gap-1 transition-colors"><Plus size={16}/> Manual Add</button>
                     </div>
                     
                     <div className="space-y-4">
                         {variants.map((variant, idx) => (
-                            <div key={idx} className="bg-white/5 p-4 rounded-lg border border-white/10">
+                            <div key={idx} className="bg-white/5 p-4 rounded-lg border border-white/10 animate-in fade-in slide-in-from-top-4 duration-300">
                                 <div className="flex justify-between mb-3 border-b border-white/10 pb-2">
                                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Variant #{idx + 1}</span>
                                     <button type="button" onClick={() => handleRemoveVariant(idx)} className="text-red-400 hover:text-red-600 transition-colors"><Trash2 size={16}/></button>
@@ -201,7 +252,12 @@ const ProductCreatePage = () => {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                                     <div className="space-y-1">
                                         <label className="text-[10px] uppercase font-bold text-gray-400">SKU</label>
-                                        <input placeholder="SKU-123" value={variant.sku} onChange={(e) => handleVariantChange(idx, 'sku', e.target.value)} className="glass-input w-full p-2 rounded text-sm" />
+                                        <input 
+                                            placeholder="SKU-123" 
+                                            value={variant.sku} 
+                                            onChange={(e) => handleVariantChange(idx, 'sku', e.target.value)} 
+                                            className="glass-input w-full p-2 rounded text-sm focus:border-accent focus:ring-1 focus:ring-accent" 
+                                        />
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-[10px] uppercase font-bold text-gray-400">Retail $</label>
@@ -238,7 +294,6 @@ const ProductCreatePage = () => {
                                 </div>
                             </div>
                         ))}
-                        {variants.length === 0 && <p className="text-sm text-gray-500 italic text-center py-4">No variants defined.</p>}
                     </div>
                 </div>
             </div>

@@ -1,10 +1,17 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { updateCart } from '../../utils/cartUtils';
 
-// Load from localStorage if available
-const initialState = localStorage.getItem('cart')
+// 1. Get data from local storage (or use defaults)
+const itemsFromStorage = localStorage.getItem('cart')
   ? JSON.parse(localStorage.getItem('cart'))
-  : { cartItems: [], shippingAddress: {}, paymentMethod: 'PayPal', isCartOpen: false };
+  : { cartItems: [], shippingAddress: {}, paymentMethod: 'PayPal' };
+
+// 2. Define Initial State
+// We spread the storage items but FORCE isCartOpen to false on load
+const initialState = {
+  ...itemsFromStorage,
+  isCartOpen: false, 
+};
 
 const cartSlice = createSlice({
   name: 'cart',
@@ -41,6 +48,8 @@ const cartSlice = createSlice({
     toggleCartDrawer: (state, action) => {
         // If true/false is passed, set it. Otherwise toggle.
         state.isCartOpen = action.payload !== undefined ? action.payload : !state.isCartOpen;
+        // We do NOT call updateCart here to avoid saving the open state unnecessarily,
+        // though the initialState fix handles it either way.
     },
     
     clearCartItems: (state) => {
